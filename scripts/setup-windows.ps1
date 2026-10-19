@@ -1,5 +1,5 @@
-# Cài một lần môi trường REA cho Claude Code trên Windows x64.
-# Chạy trong PowerShell từ thư mục repo:
+﻿# One-time REA environment setup for Claude Code on Windows x64.
+# Run in PowerShell from the repository folder:
 #   powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1
 $ErrorActionPreference = 'Stop'
 
@@ -21,7 +21,7 @@ function Winget-Install($id) {
 }
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-  throw 'Cần winget (App Installer từ Microsoft Store).'
+  throw 'winget is required (App Installer from the Microsoft Store).'
 }
 
 # Node.js >= 22.19
@@ -32,7 +32,7 @@ if (-not $node -or [version](node -p 'process.versions.node') -lt [version]'22.1
 }
 node --version
 
-# JDK 21 (Ghidra 12.1 cần JDK 21+)
+# JDK 21 (Ghidra 12.1 requires JDK 21+)
 Step 'JDK 21'
 $jdk = Get-ChildItem 'C:\Program Files\Microsoft' -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue |
   Sort-Object Name -Descending | Select-Object -First 1
@@ -52,31 +52,31 @@ if (-not (Test-Path (Join-Path $GhidraDir 'support\analyzeHeadless.bat'))) {
   Invoke-WebRequest -UseBasicParsing -OutFile $zip `
     "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_${GhidraVersion}_build/$GhidraZip"
   $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-  if ($hash -ne $GhidraSha256) { throw "Sai SHA-256 của Ghidra: $hash" }
+  if ($hash -ne $GhidraSha256) { throw "Ghidra SHA-256 mismatch: $hash" }
   Expand-Archive $zip -DestinationPath $ToolsDir -Force
   Remove-Item $zip
 }
 [Environment]::SetEnvironmentVariable('GHIDRA_INSTALL_DIR', $GhidraDir, 'User')
 $env:GHIDRA_INSTALL_DIR = $GhidraDir
 
-# UPX và asar
+# UPX and asar
 Step 'UPX'
 if (-not (Get-Command upx -ErrorAction SilentlyContinue)) { Winget-Install 'UPX.UPX' }
 Step '@electron/asar'
 if (-not (Get-Command asar -ErrorAction SilentlyContinue)) { npm install -g @electron/asar }
 
-# Đăng ký REA cho repo này (scope local ghi đè .mcp.json; Windows cần cmd /c cho npx)
-Step 'Đăng ký REA với Claude Code'
+# Register REA for this repo (local scope overrides .mcp.json; Windows needs cmd /c for npx)
+Step 'Register REA with Claude Code'
 if (Get-Command claude -ErrorAction SilentlyContinue) {
   Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue
-  claude mcp remove --scope local rea 2>$null
+  try { cmd.exe /d /c "claude mcp remove --scope local rea >nul 2>&1" } catch { }
   claude mcp add --scope local rea `
     -e "GHIDRA_INSTALL_DIR=$GhidraDir" -e "JAVA_HOME=$($jdk.FullName)" `
     -- cmd.exe /d /c npx -y "rea-agents@$ReaVersion" mcp
 } else {
-  Write-Warning 'Chưa có lệnh claude. Cài Claude Code rồi chạy lại script này.'
+  Write-Warning 'claude command not found. Install Claude Code, then run this script again.'
 }
 
-Step 'Kiểm tra'
+Step 'Check'
 npx -y "rea-agents@$ReaVersion" doctor --provider ghidra --json
-Write-Host 'Xong. Mở lại terminal rồi chạy "claude" trong thư mục repo.' -ForegroundColor Green
+Write-Host 'Done (Xong). Reopen PowerShell, then run "claude" in the repo folder.' -ForegroundColor Green
