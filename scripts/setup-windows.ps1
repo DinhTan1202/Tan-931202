@@ -2,6 +2,8 @@
 # Run in PowerShell from the repository folder:
 #   powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1
 $ErrorActionPreference = 'Stop'
+# The progress bar makes Invoke-WebRequest very slow on Windows PowerShell 5.1
+$ProgressPreference = 'SilentlyContinue'
 
 $GhidraVersion = '12.1.4'
 $GhidraZip = "ghidra_${GhidraVersion}_PUBLIC_20260921.zip"
