@@ -13,12 +13,36 @@ Repo này tích hợp sẵn [REA](https://github.com/morluto/rea) (MIT, npm `rea
 
 Không sửa `~/.claude.json` hay `~/.claude/skills` của máy bạn.
 
-### Yêu cầu
+### Công cụ đi kèm
 
-- Node.js 22.x (>=22.19), 24.x (>=24.11) hoặc 26+, kèm npm.
-- Linux: cần `ps` (procps) cho Ghidra/JADX/firmware và phân tích JS/Electron.
-- Binary native: cần Hopper, Ghidra hoặc IDA đã cài sẵn. Phân tích JS/Electron,
-  .NET, Go/Rust metadata, WASM… không cần engine native.
+| Mục đích | Công cụ | Cloud (Linux) | Windows |
+| --- | --- | --- | --- |
+| .exe / binary native | Ghidra 12.1.4 + JDK 21 | tự cài mỗi phiên (`.claude/hooks/session-start.sh`) | `scripts/setup-windows.ps1` (cài một lần) |
+| Gỡ nén .exe | UPX | apt `upx-ucl` | winget `UPX.UPX` |
+| Chạy thử .exe | Wine 9 (64 + 32-bit) | apt `wine` | không cần (chạy trực tiếp; nên dùng VM/Windows Sandbox) |
+| Electron | `@electron/asar` | npm global | npm global |
+| Web | Chromium/Chrome qua CDP | có sẵn, mở bằng `scripts/start-cdp-browser.sh URL` | Chrome/Edge với `--remote-debugging-port=9222` |
+
+REA cần Node.js 22.x (>=22.19), 24.x (>=24.11) hoặc 26+. Hopper/IDA không bắt buộc.
+
+#### Cloud (từ app điện thoại hoặc web)
+
+Container cloud bị xoá sau mỗi phiên nên không cài hẳn được. Hook `SessionStart`
+tự cài lại (khoảng 1–2 phút, chỉ chạy khi `CLAUDE_CODE_REMOTE=true`) và đặt
+`GHIDRA_INSTALL_DIR=/opt/ghidra`. Hook chỉ có hiệu lực khi nằm trên nhánh mà phiên mở.
+
+#### Windows (cài một lần)
+
+```powershell
+git clone https://github.com/DinhTan1202/Tan-931202
+cd Tan-931202
+powershell -ExecutionPolicy Bypass -File scripts\setup-windows.ps1
+```
+
+Script cài Node.js LTS, Microsoft OpenJDK 21, Ghidra 12.1.4 (kiểm tra SHA-256), UPX,
+asar; đặt `GHIDRA_INSTALL_DIR`/`JAVA_HOME` cho user; đăng ký REA ở scope local với
+`cmd.exe /d /c npx …` (Windows cần dạng này). REA hỗ trợ Ghidra trên Windows ở mức thử
+nghiệm và chỉ đọc (không đổi tên hàm).
 
 ### Dùng
 
@@ -28,11 +52,11 @@ Mở Claude Code trong repo, kiểm tra bằng `/mcp` (thấy `rea` là connecte
 Dùng REA phân tích /đường/dẫn/app.asar: tính năng tìm kiếm hoạt động thế nào, kèm bằng chứng.
 ```
 
-Kiểm tra sức khoẻ: `npx -y rea-agents@6.7.0 doctor --client claude_code --json`
+Kiểm tra sức khoẻ: `npx -y rea-agents@6.7.0 doctor --provider ghidra --json`
 
 ### Cập nhật phiên bản
 
-Đổi `6.7.0` trong `.mcp.json` thành bản mới, rồi chép lại skill từ gói npm:
+Đổi `6.7.0` trong `.mcp.json`, `.claude/hooks/session-start.sh` và `scripts/setup-windows.ps1` thành bản mới, rồi chép lại skill từ gói npm:
 
 ```bash
 npm pack rea-agents@<ver> && tar xzf rea-agents-<ver>.tgz

@@ -4,7 +4,9 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "rea-agents@6.7.0", "mcp"],
-      "env": {}
+      "env": {
+        "GHIDRA_INSTALL_DIR": "${GHIDRA_INSTALL_DIR:-/opt/ghidra}"
+      }
     }
   }
 }
